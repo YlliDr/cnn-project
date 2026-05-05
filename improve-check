@@ -1,0 +1,252 @@
+==============================
+TESTING & IMPROVEMENT GUIDE
+Salient Object Detection Project
+==============================
+
+Goal:
+This document explains how to properly test the model, evaluate results, and improve performance step by step.
+
+----------------------------------------
+1. TESTING THE MODEL
+----------------------------------------
+
+Step 1: Train the model
+
+Run:
+python train.py
+
+What to check:
+- Loss should decrease over epochs
+- No runtime errors
+- Model checkpoint is saved
+
+Output:
+outputs/models/best_sod_model.pth
+
+----------------------------------------
+
+Step 2: Evaluate the model
+
+Run:
+python evaluate.py
+
+This will:
+- Calculate metrics
+- Save prediction images
+
+Check:
+- IoU (Intersection over Union)
+- Precision
+- Recall
+- F1 Score
+- MAE
+
+Also check saved images in:
+outputs/predictions/
+
+----------------------------------------
+
+Step 3: Run demo
+
+Run:
+python demo.py
+
+Test with your own image:
+- Model should output mask
+- Overlay should highlight object
+- Inference time should be printed
+
+----------------------------------------
+
+2. HOW TO JUDGE RESULTS
+----------------------------------------
+
+Good result:
+- Mask covers main object clearly
+- Boundaries are somewhat defined
+- Minimal background noise
+
+Weak result:
+- Blurry mask
+- Missing parts of object
+- Highlighting background
+- Blocky/low-resolution look
+
+Important:
+Even imperfect results are acceptable if properly analyzed.
+
+----------------------------------------
+
+3. BASELINE RESULT (IMPORTANT)
+----------------------------------------
+
+Your first working model = baseline.
+
+You must:
+- Save results (images + metrics)
+- Use this as comparison later
+
+Example:
+Baseline IoU: 0.45
+Baseline F1: 0.60
+
+----------------------------------------
+
+4. HOW TO IMPROVE THE MODEL
+----------------------------------------
+
+You MUST perform at least 2 improvements.
+
+Choose from below:
+
+----------------------------------------
+
+Improvement 1: Train longer
+
+Change:
+EPOCHS = 20 → 30 or 40
+
+Why:
+Model needs more time to learn patterns
+
+----------------------------------------
+
+Improvement 2: Lower learning rate
+
+Change:
+lr = 1e-3 → 1e-4
+
+Why:
+More stable learning, less noisy predictions
+
+----------------------------------------
+
+Improvement 3: Add Dropout
+
+Add in model:
+nn.Dropout2d(0.2)
+
+Why:
+Prevents overfitting, improves generalization
+
+----------------------------------------
+
+Improvement 4: Increase image size
+
+Change:
+IMAGE_SIZE = 128 → 224
+
+Why:
+Higher resolution = sharper masks
+
+----------------------------------------
+
+Improvement 5: Add BatchNorm (if not already used)
+
+Why:
+Stabilizes training and improves convergence
+
+----------------------------------------
+
+Improvement 6: Modify loss weight
+
+Change:
+loss = BCE + 0.5 * (1 - IoU)
+
+Try:
+loss = BCE + 1.0 * (1 - IoU)
+
+----------------------------------------
+
+5. COMPARING RESULTS
+----------------------------------------
+
+After improvements, compare with baseline:
+
+Create a table:
+
+Model            IoU     Precision     Recall     F1
+-----------------------------------------------------
+Baseline         0.45    0.62          0.58       0.60
+Improved #1      0.52    0.68          0.63       0.65
+Improved #2      0.57    0.72          0.66       0.69
+
+Also compare images visually.
+
+----------------------------------------
+
+6. WHAT TO WRITE IN REPORT
+----------------------------------------
+
+Be honest and analytical:
+
+Example:
+
+"The model successfully identifies the general region of salient objects, 
+but the predicted masks are relatively blurry and lack sharp boundaries. 
+This is likely due to limited training time and the simplicity of the architecture. 
+After applying improvements such as increased training epochs and lower learning rate, 
+the model produced more accurate and stable predictions."
+
+----------------------------------------
+
+7. COMMON PROBLEMS
+----------------------------------------
+
+Problem: Very blurry masks
+Fix:
+- Train longer
+- Increase image size
+
+Problem: Model predicts nothing
+Fix:
+- Check normalization
+- Check loss function
+
+Problem: Model predicts everything white
+Fix:
+- Lower learning rate
+- Check mask values (0–1)
+
+----------------------------------------
+
+8. CHATGPT PROMPT (FOR FUTURE HELP)
+----------------------------------------
+
+Use this when you get stuck:
+
+----------------------------------------
+
+"I am working on a Salient Object Detection project using PyTorch.
+
+My setup:
+- Image size: 128
+- Model: encoder-decoder CNN
+- Loss: BCE + IoU
+- Dataset: (mention yours)
+
+Here are my results:
+(paste IoU, F1, and example outputs)
+
+Problems:
+(describe what looks wrong)
+
+Based on this, suggest specific improvements and explain why they will help."
+
+----------------------------------------
+
+9. FINAL CHECK BEFORE SUBMISSION
+----------------------------------------
+
+- Model trains without errors
+- Metrics are computed
+- Prediction images are saved
+- At least 2 improvements tested
+- Results compared in table
+- Demo works
+- Report includes analysis
+
+----------------------------------------
+
+END OF DOCUMENT
+----------------------------------------
