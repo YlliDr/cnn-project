@@ -263,17 +263,14 @@ Run:
 python demo.py
 ```
 
-Then enter an image path when prompted, for example:
+A file selection window will open. Select an image from your computer.
 
-```text
-data/images/0001.jpg
-```
 
 The demo shows:
 
 ```text
 Input image
-Predicted saliency mask
+Soft saliency mask
 Binary mask
 Overlay visualization
 Inference time
