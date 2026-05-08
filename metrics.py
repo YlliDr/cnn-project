@@ -2,39 +2,48 @@ import torch
 
 
 def calculate_metrics(prediction, target, threshold=0.5, smooth=1e-6):
-    # convert soft predictions into black/white mask
+    # keep original soft prediction for MAE
+    soft_prediction = prediction.clone()
+
+    # convert soft predictions into binary masks
     prediction = (prediction > threshold).float()
     target = (target > threshold).float()
 
-    # correctly predicted foreground pixels
+    # true positives
     true_positive = (prediction * target).sum()
 
-    # pixels predicted as foreground but actually background
+    # false positives
     false_positive = (prediction * (1 - target)).sum()
 
-    # pixels that should be foreground but model missed them
+    # false negatives
     false_negative = ((1 - prediction) * target).sum()
 
-    # how many predicted foreground pixels were actually correct
+    # precision
     precision = (true_positive + smooth) / (
         true_positive + false_positive + smooth
     )
 
-    # how much of the real object the model found
+    # recall
     recall = (true_positive + smooth) / (
         true_positive + false_negative + smooth
     )
 
-    # balance between precision and recall
-    f1 = 2 * precision * recall / (precision + recall + smooth)
+    # f1 score
+    f1 = 2 * precision * recall / (
+        precision + recall + smooth
+    )
 
-    # overlap between predicted mask and real mask
+    # intersection over union
     intersection = (prediction * target).sum()
-    union = prediction.sum() + target.sum() - intersection
-    iou = (intersection + smooth) / (union + smooth)
 
-    # average pixel difference between prediction and target
-    mae = torch.abs(prediction - target).mean()
+    union = prediction.sum() + target.sum() - intersection
+
+    iou = (intersection + smooth) / (
+        union + smooth
+    )
+
+    # MAE should use soft predictions, not thresholded ones
+    mae = torch.abs(soft_prediction - target).mean()
 
     return {
         "iou": iou.item(),

@@ -8,17 +8,11 @@ from torch.utils.data import Dataset
 
 class SODDataset(Dataset):
     def __init__(self, image_dir, mask_dir, image_size=128, augment=False):
-        # paths to images and masks
         self.image_dir = image_dir
         self.mask_dir = mask_dir
-
-        # size we want to resize everything to
         self.image_size = image_size
-
-        # whether we apply augmentation or not
         self.augment = augment
 
-        # get all file names and keep them sorted so they match
         self.images = sorted([
             f for f in os.listdir(image_dir)
             if f.lower().endswith((".jpg", ".png", ".jpeg"))
@@ -29,20 +23,16 @@ class SODDataset(Dataset):
             if f.lower().endswith((".jpg", ".png", ".jpeg"))
         ])
 
-        # quick sanity check
         if len(self.images) != len(self.masks):
             raise ValueError("Number of images and masks must be the same")
 
     def __len__(self):
-        # total number of samples
         return len(self.images)
 
     def __getitem__(self, index):
-        # build full paths
         img_path = os.path.join(self.image_dir, self.images[index])
         mask_path = os.path.join(self.mask_dir, self.masks[index])
 
-        # read image and mask
         image = cv2.imread(img_path)
         mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
 
@@ -52,30 +42,59 @@ class SODDataset(Dataset):
         if mask is None:
             raise ValueError(f"Could not load mask: {mask_path}")
 
-        # convert BGR to RGB (opencv loads as BGR)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        # resize both
-        image = cv2.resize(image, (self.image_size, self.image_size))
-        mask = cv2.resize(mask, (self.image_size, self.image_size))
+        image = cv2.resize(
+            image,
+            (self.image_size, self.image_size),
+            interpolation=cv2.INTER_LINEAR
+        )
 
-        # apply simple augmentation if enabled
+        mask = cv2.resize(
+            mask,
+            (self.image_size, self.image_size),
+            interpolation=cv2.INTER_NEAREST
+        )
+
         if self.augment:
             image, mask = self.apply_augmentation(image, mask)
 
-        # normalize to [0, 1]
         image = image.astype(np.float32) / 255.0
         mask = mask.astype(np.float32) / 255.0
 
-        # change shape from HWC -> CHW
-        image = np.transpose(image, (2, 0, 1))
+        mask = (mask > 0.5).astype(np.float32)
 
-        # add channel dimension to mask
+        image = np.transpose(image, (2, 0, 1))
         mask = np.expand_dims(mask, axis=0)
 
-        # convert to tensors
         image = torch.tensor(image, dtype=torch.float32)
         mask = torch.tensor(mask, dtype=torch.float32)
+
+        return image, mask
+
+    def random_crop(self, image, mask, crop_scale=0.9):
+        h, w = image.shape[:2]
+
+        crop_h = int(h * crop_scale)
+        crop_w = int(w * crop_scale)
+
+        top = random.randint(0, h - crop_h)
+        left = random.randint(0, w - crop_w)
+
+        image = image[top:top + crop_h, left:left + crop_w]
+        mask = mask[top:top + crop_h, left:left + crop_w]
+
+        image = cv2.resize(
+            image,
+            (self.image_size, self.image_size),
+            interpolation=cv2.INTER_LINEAR
+        )
+
+        mask = cv2.resize(
+            mask,
+            (self.image_size, self.image_size),
+            interpolation=cv2.INTER_NEAREST
+        )
 
         return image, mask
 
@@ -85,9 +104,13 @@ class SODDataset(Dataset):
             image = cv2.flip(image, 1)
             mask = cv2.flip(mask, 1)
 
-        # small brightness change
+        # random crop
+        if random.random() > 0.5:
+            image, mask = self.random_crop(image, mask, crop_scale=0.9)
+
+        # brightness change only affects image, not mask
         if random.random() > 0.5:
             factor = random.uniform(0.8, 1.2)
-            image = np.clip(image * factor, 0, 255).astype(np.uint8)
+            image = np.clip(image.astype(np.float32) * factor, 0, 255).astype(np.uint8)
 
         return image, mask

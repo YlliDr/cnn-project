@@ -1,13 +1,26 @@
+# Virtual environment
 venv/
+.venv/
+
+# Python cache
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
+# Dataset
 data/
+
+# Output folders
 outputs/
 
+# Model files
 *.pth
 *.pt
 *.ckpt
 
-.DS_Store
+# IDE / OS files
 .vscode/
+.idea/
+.DS_Store
+Thumbs.db
